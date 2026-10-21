@@ -1,0 +1,626 @@
+<!doctype html><html lang="ko" data-theme="light"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>내 몸은 지금 어느 쪽이 약한가</title><style>
+:root{
+  --bg:#faf7f1; --surface:#fffdf8; --ink:#2b2620; --ink-soft:#5c534a;
+  --muted:#938779; --line:#e8e0d3; --accent:#bf4e30; --accent-soft:#e9d9cf;
+  --shadow:0 8px 40px rgba(60,40,20,.10);
+  --serif:'Pretendard','Pretendard Variable',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic','맑은 고딕',system-ui,sans-serif;
+  --fs:19px; --maxw:660px;
+}
+html[data-theme="dark"]{
+  --bg:#151210; --surface:#1e1a16; --ink:#ece4d7; --ink-soft:#c3b8a8;
+  --muted:#8f8474; --line:#2e2820; --accent:#e5794f; --accent-soft:#3a2b23;
+  --shadow:0 8px 40px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--serif); font-size:var(--fs); line-height:1.95;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  word-break:keep-all; overflow-wrap:break-word;
+}
+#progress{position:fixed;top:0;left:0;height:3px;width:0;background:var(--accent);z-index:60;transition:width .1s linear}
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:.5rem;
+  padding:.55rem .8rem;background:var(--surface);border-bottom:1px solid var(--line)}
+.topbar .tb-title{font-size:.9rem;font-weight:600;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .spacer{flex:1}
+.iconbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);
+  width:38px;height:38px;border-radius:10px;font-size:1rem;cursor:pointer;display:flex;
+  align-items:center;justify-content:center;transition:.15s;flex:none;font-family:var(--serif)}
+.iconbtn:hover{border-color:var(--accent);color:var(--accent)}
+.iconbtn.sm{width:34px;height:34px;font-size:.85rem}
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);opacity:0;visibility:hidden;transition:.25s;z-index:70}
+.backdrop.open{opacity:1;visibility:visible}
+.drawer{position:fixed;top:0;left:0;height:100%;width:min(86vw,360px);background:var(--surface);
+  z-index:80;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+  box-shadow:var(--shadow);display:flex;flex-direction:column;border-right:1px solid var(--line)}
+.drawer.open{transform:none}
+.drawer .dhead{padding:1.1rem 1.2rem .8rem;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between}
+.drawer .dhead b{font-size:1rem}
+.toc{overflow-y:auto;padding:.6rem 0 2rem}
+.toc .part-t{padding:1rem 1.2rem .35rem;font-size:.72rem;letter-spacing:.08em;font-weight:700;
+  color:var(--accent);text-transform:uppercase}
+.toc .part-name{padding:0 1.2rem .5rem;font-size:.82rem;color:var(--muted);line-height:1.5}
+.toc a{display:flex;gap:.6rem;padding:.42rem 1.2rem;color:var(--ink-soft);text-decoration:none;
+  font-size:.9rem;line-height:1.5;transition:.12s;border-left:2px solid transparent}
+.toc a .n{color:var(--muted);font-variant-numeric:tabular-nums;flex:none;min-width:1.6em;text-align:right}
+.toc a:hover{background:var(--bg);color:var(--ink)}
+.toc a.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-soft)}
+/* cover (image) */
+.cover{min-height:calc(100svh - 53px);display:flex;align-items:center;justify-content:center;
+  background:#000;padding:0;position:relative;overflow:hidden}
+.cover-img{max-width:100%;max-height:calc(100svh - 53px);width:auto;height:auto;object-fit:contain;display:block}
+/* 텍스트 표지 (표지 이미지 없을 때) */
+.cover.text{background:var(--bg);flex-direction:column;padding:3rem 1.8rem;text-align:center}
+.cover .cover-kick{font-size:.78rem;letter-spacing:.3em;color:var(--accent);font-weight:700;margin-bottom:2.2rem}
+.cover .cover-title{font-size:clamp(2.3rem,9.5vw,3.9rem);font-weight:800;line-height:1.28;
+  margin:0 0 1.7rem;letter-spacing:-.02em;color:var(--ink);word-break:keep-all}
+.cover .cover-rule{width:48px;height:2px;background:var(--accent);opacity:.6;margin:0 auto 1.7rem}
+.cover .cover-sub{font-size:clamp(.95rem,3.4vw,1.08rem);color:var(--ink-soft);line-height:1.75;
+  max-width:23em;margin:0 auto;word-break:keep-all}
+.cover.text .scroll-hint{color:var(--muted);text-shadow:none}
+.cover .scroll-hint{position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);
+  font-size:.75rem;color:rgba(255,255,255,.72);text-shadow:0 1px 5px rgba(0,0,0,.7);
+  animation:bob 2s ease-in-out infinite;z-index:2;letter-spacing:.02em}
+@keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,6px)}}
+.part{min-height:78vh;display:flex;flex-direction:column;justify-content:center;text-align:center;
+  padding:5rem 1.35rem;scroll-margin-top:70px}
+.part .pnum{font-size:.85rem;letter-spacing:.3em;color:var(--accent);font-weight:700;margin-bottom:1.4rem}
+.part .pdot{width:6px;height:6px;border-radius:50%;background:var(--accent);margin:0 auto 1.4rem}
+.part h2{font-size:clamp(1.7rem,6vw,2.5rem);line-height:1.35;margin:0 auto;font-weight:800;letter-spacing:-.01em;max-width:17em}
+.book-toc{max-width:var(--maxw);margin:0 auto;padding:4.5rem 1.6rem 3rem;scroll-margin-top:64px}
+.book-toc .bt-kick{text-align:center;font-size:.78rem;letter-spacing:.32em;color:var(--accent);font-weight:700;margin-bottom:1rem}
+.book-toc .bt-title{text-align:center;font-size:1.9rem;font-weight:800;margin:0 0 3.2rem;letter-spacing:-.01em}
+.updbox{max-width:36em;margin:0 auto 2.8rem;padding:1.05rem 1.25rem 1.1rem;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.updbox .upd-head{font-size:.82rem;font-weight:700;color:var(--accent);margin-bottom:.7rem;display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;letter-spacing:.01em}
+.updbox .upd-note{font-size:.72rem;font-weight:500;color:var(--muted);letter-spacing:0}
+.updbox .upd-list{list-style:none;margin:0;padding:0}
+.updbox .upd-list li{display:flex;gap:.55rem;padding:.28rem 0;font-size:.83rem;color:var(--ink-soft);line-height:1.55;align-items:baseline}
+.updbox .upd-date{flex:none;color:var(--muted);font-variant-numeric:tabular-nums;font-size:.78rem}
+.updbox .upd-sep{flex:none;color:var(--line)}
+.bt-part{margin-bottom:3rem}
+.bt-part .bt-pnum{font-size:.74rem;letter-spacing:.16em;color:var(--accent);font-weight:700;margin-bottom:.35rem}
+.bt-part .bt-ptitle{font-size:1.14rem;font-weight:700;margin-bottom:1.1rem;line-height:1.5}
+.bt-part ol{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.bt-part li{border-bottom:1px solid var(--line)}
+.bt-part a{display:flex;gap:.85rem;align-items:baseline;padding:.66rem .2rem;text-decoration:none;color:var(--ink-soft);font-size:.95rem;line-height:1.55;transition:.12s}
+.bt-part a:hover{color:var(--accent)}
+.bt-part a .n{flex:none;min-width:1.8em;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;font-size:.85rem}
+/* 읽기 경로 */
+.paths{max-width:var(--maxw);margin:0 auto;padding:4rem 1.6rem 2rem;scroll-margin-top:64px}
+.paths .bt-kick{text-align:center;font-size:.78rem;letter-spacing:.32em;color:var(--accent);font-weight:700;margin-bottom:1rem}
+.paths .bt-title{text-align:center;font-size:1.6rem;font-weight:800;margin:0 0 2.4rem;letter-spacing:-.01em}
+.course{border:1px solid var(--line);border-radius:14px;padding:1.3rem 1.3rem .5rem;margin-bottom:1.4rem;background:var(--surface)}
+.course-head{display:flex;align-items:center;gap:.85rem;margin-bottom:1rem}
+.course-ico{font-size:1.55rem;flex:none;line-height:1}
+.course-title{font-size:1.12rem;font-weight:800;letter-spacing:-.01em}
+.course-desc{font-size:.82rem;color:var(--muted);margin-top:.15rem}
+.course-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.course-list li{border-bottom:1px solid var(--line)}
+.course-list a{display:flex;gap:.7rem;align-items:baseline;padding:.6rem .1rem;text-decoration:none;color:var(--ink-soft);font-size:.92rem;line-height:1.5;transition:.12s}
+.course-list a:hover{color:var(--accent)}
+.course-list a .n{flex:none;min-width:2em;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;font-size:.82rem}
+/* 파트 간 연결글 / 맺음글 */
+.bridge{max-width:var(--maxw);margin:0 auto;padding:3.4rem 1.6rem 3.8rem;text-align:center}
+.bridge::before{content:"";display:block;width:40px;height:2px;background:var(--accent);opacity:.5;margin:0 auto 2.3rem}
+.bridge p{color:var(--ink-soft);font-size:1.02em;line-height:1.9;margin:0 auto 1rem;max-width:26em}
+.bridge.epilogue{padding-top:4.6rem;padding-bottom:6rem;scroll-margin-top:64px}
+.bridge.epilogue::before{display:none}
+.bridge .bridge-kick{font-size:.78rem;letter-spacing:.3em;color:var(--accent);font-weight:700;margin-bottom:1.9rem}
+.bridge.epilogue p{color:var(--ink-soft)}
+/* prologue */
+.prologue{max-width:var(--maxw);margin:0 auto;padding:4.5rem 1.6rem 2rem;scroll-margin-top:64px}
+.prologue .pro-kick{text-align:center;font-size:.78rem;letter-spacing:.32em;color:var(--accent);font-weight:700;margin-bottom:1.7rem}
+.prologue .pro-title{text-align:center;font-size:clamp(1.7rem,5.5vw,2.3rem);font-weight:800;line-height:1.36;margin:0 0 2.6rem;letter-spacing:-.01em}
+.preface .pro-kick{margin-bottom:2.4rem}
+.preface p{color:var(--ink-soft)}
+.prologue p{margin:0 0 1.5rem;line-height:1.9}
+.prologue figure{margin:2.8rem 0}
+.prologue figure img{width:100%;height:auto;border-radius:12px;box-shadow:var(--shadow);display:block}
+.prologue figcaption{text-align:center;font-size:.85rem;color:var(--muted);line-height:1.65;margin-top:1rem;padding:0 .4rem}
+.prologue .pro-divider{width:44px;height:2px;background:var(--accent);opacity:.5;border:0;margin:3.6rem auto}
+.pro-callout{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:12px;padding:1.7rem 1.5rem .7rem;margin:2.6rem 0;box-shadow:var(--shadow)}
+.pro-callout .co-p{font-size:.95rem;line-height:1.8;color:var(--ink-soft);margin:0 0 1.05rem}
+.pro-callout .co-p:first-child{color:var(--accent);font-weight:700;letter-spacing:.02em}
+.pro-callout .co-div{height:1px;background:var(--line);border:0;margin:1.25rem 0}
+.prologue .pro-shead{text-align:center;font-size:1.12rem;font-weight:800;color:var(--ink);
+  margin:3.6rem 0 .6rem;letter-spacing:-.01em}
+.prologue .pro-mark{display:inline-flex;align-items:center;justify-content:center;width:2rem;height:2rem;
+  border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:.95rem;margin:2.4rem 0 1.1rem}
+.chapter{position:relative;max-width:var(--maxw);margin:0 auto;padding:3.6rem 1.6rem 1.2rem;scroll-margin-top:64px;
+  content-visibility:auto;contain-intrinsic-size:0 1200px}
+.chapter .cnum{font-size:.82rem;font-weight:700;color:var(--accent);letter-spacing:.05em;margin-bottom:.7rem}
+.chapter h3{font-size:clamp(1.5rem,5vw,2rem);line-height:1.36;margin:0 0 1rem;font-weight:800;letter-spacing:-.01em}
+.chapter .csub{font-size:1.05rem;line-height:1.7;color:var(--ink-soft);border-left:3px solid var(--accent);
+  padding:.15rem 0 .15rem 1rem;margin:0 0 2.1rem;font-weight:500}
+.chapter .csub::before{content:"“"}
+.chapter .csub::after{content:"”"}
+.chapter p{margin:0 0 1.35rem}
+/* 꼭지 삽화 (도해) — 다크모드에서도 흰 카드로 */
+.chapter figure.dgm{margin:2.6rem 0 1.4rem;background:#fff;border:1px solid var(--line);
+  border-radius:12px;padding:.85rem;box-shadow:var(--shadow)}
+.chapter figure.dgm img{width:100%;height:auto;display:block;border-radius:4px}
+.chapter figure.dgm figcaption{text-align:center;font-size:.84rem;color:#64748B;line-height:1.6;margin-top:.7rem}
+.chapter .divider{height:1px;background:var(--line);border:0;margin:3.4rem auto;width:70%}
+.chapter:last-of-type .divider{display:none}
+/* prev/next chapter nav */
+.chnav{display:flex;gap:.7rem;margin:2.4rem 0 0}
+.chnav a{flex:1;min-width:0;text-decoration:none;color:var(--ink-soft);font-size:.86rem;line-height:1.45;
+  padding:.7rem .9rem;border:1px solid var(--line);border-radius:10px;transition:.15s;background:var(--surface)}
+.chnav a:hover{border-color:var(--accent);color:var(--accent)}
+.chnav a.next{text-align:right}
+.chnav a.ch-hide{visibility:hidden;pointer-events:none}
+.chnav a .dir{display:block;font-size:.72rem;color:var(--muted);margin-bottom:.18rem}
+.chnav a .t{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* resume reading bar */
+#resumeBar{position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);z-index:45;
+  display:none;align-items:center;gap:.5rem;background:var(--accent);color:#fff;
+  padding:.58rem 1.1rem;border-radius:22px;box-shadow:var(--shadow);cursor:pointer;
+  font-size:.85rem;font-weight:600;font-family:var(--serif)}
+#resumeBar.show{display:inline-flex}
+#resumeBar .rb-x{opacity:.85;padding-left:.2rem;font-weight:400}
+/* per-chapter copy button */
+.copy-btn{position:absolute;top:1.5rem;right:1.6rem;z-index:5;display:inline-flex;align-items:center;
+  gap:.34rem;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+  padding:.34rem .62rem;border-radius:9px;font-size:.74rem;font-family:var(--serif);font-weight:600;
+  cursor:pointer;line-height:1;opacity:.6;transition:.15s}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent);opacity:1}
+.copy-btn.copied{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);opacity:1}
+.copy-btn .cb-ico{font-size:.9rem}
+@media (max-width:520px){ .copy-btn{top:1rem;right:1.3rem} }
+@media print{ .copy-btn{display:none!important} }
+.search-overlay{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.5);display:none;padding:7vh 1rem 1rem}
+.search-overlay.open{display:block}
+.search-box{max-width:640px;margin:0 auto;background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;box-shadow:var(--shadow);overflow:hidden;max-height:86vh;display:flex;flex-direction:column}
+.search-head{display:flex;gap:.35rem;padding:.55rem .7rem;border-bottom:1px solid var(--line);align-items:center}
+.search-ico{padding-left:.35rem;color:var(--muted);font-size:.95rem}
+#searchInput{flex:1;border:0;background:transparent;color:var(--ink);font-size:1.05rem;
+  font-family:var(--serif);padding:.45rem .3rem;outline:none}
+.search-results{overflow-y:auto;padding:.2rem 0}
+.search-empty{padding:1.5rem;text-align:center;color:var(--muted);font-size:.9rem;line-height:1.6}
+.search-result{display:block;padding:.7rem 1.1rem;text-decoration:none;border-bottom:1px solid var(--line)}
+.search-result:hover{background:var(--bg)}
+.sr-title{font-size:.92rem;font-weight:700;margin-bottom:.28rem;color:var(--ink)}
+.sr-count{font-size:.7rem;color:var(--accent);border:1px solid var(--accent-soft);border-radius:10px;
+  padding:.02em .5em;margin-left:.4em;font-weight:600;white-space:nowrap}
+.sr-snip{font-size:.85rem;color:var(--ink-soft);line-height:1.6;word-break:keep-all}
+.sr-snip mark,mark.shl{background:#ffe08a;color:#1a1a1a;padding:0 .12em;border-radius:2px;font-weight:600}
+.dtools{display:flex;gap:.5rem;padding:.75rem 1.2rem;border-bottom:1px solid var(--line)}
+.dtool{flex:1;display:flex;align-items:center;justify-content:center;gap:.35rem;padding:.6rem .4rem;
+  border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink-soft);font-size:.82rem;
+  font-family:var(--serif);cursor:pointer;text-decoration:none;transition:.15s}
+.dtool:hover{border-color:var(--accent);color:var(--accent)}
+#toTop{position:fixed;right:1.1rem;bottom:1.1rem;z-index:40;opacity:0;visibility:hidden;transition:.2s}
+#toTop.show{opacity:1;visibility:visible}
+.endmark{text-align:center;padding:4rem 1.35rem 6rem;color:var(--muted);font-size:.9rem}
+.endmark .em-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;margin:0 auto 1.5rem}
+@media (max-width:520px){
+  :root{--fs:21px}
+  .chapter{padding:2.9rem 1.3rem .6rem}
+  .book-toc{padding:3.5rem 1.3rem 2rem}
+}
+@media (max-width:430px){ .tb-title{display:none} }
+@media print{
+  @page{margin:16mm 14mm}
+  html,html[data-theme="dark"],html[data-theme="light"]{
+    --bg:#fff;--surface:#fff;--ink:#1a1a1a;--ink-soft:#3a3a3a;--muted:#6a6a6a;
+    --line:#d5d5d5;--accent:#b5451f;--accent-soft:#f2e8e2;--shadow:none;
+  }
+  .topbar,.drawer,.backdrop,#toTop,#progress,.scroll-hint,.search-overlay,.chnav,#resumeBar{display:none!important}
+  body{background:#fff;color:#1a1a1a;font-size:11.5pt}
+  .cover{min-height:auto;background:#fff;page-break-after:always}
+  .cover-img{max-height:96vh}
+  .prologue{page-break-after:always;padding-top:1rem}
+  .prologue figure{page-break-inside:avoid}
+  .prologue figure img{box-shadow:none;border:1px solid var(--line)}
+  .pro-callout{box-shadow:none;page-break-inside:avoid}
+  .book-toc{page-break-after:always}
+  .part{min-height:auto;page-break-before:always;page-break-after:avoid}
+  .chapter{page-break-inside:avoid;content-visibility:visible!important;contain-intrinsic-size:auto!important;padding-top:1.6rem}
+  .chapter figure.dgm{page-break-inside:avoid;box-shadow:none}
+  .chapter h3{page-break-after:avoid}
+  .chapter .csub{page-break-after:avoid}
+  :root{--maxw:100%}
+}
+
+
+/* ── PDF 저장 (PDF_SIZE_PATCH_v2) ───────────────────────── */
+#pdfOverlay{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.5);display:none;
+  align-items:center;justify-content:center;padding:1.2rem}
+#pdfOverlay.open{display:flex}
+#pdfOverlay .pdf-box{width:100%;max-width:390px;background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;box-shadow:var(--shadow);padding:1.15rem 1.2rem 1rem;font-family:var(--serif)}
+#pdfOverlay .pdf-h{font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:.9rem;text-align:center}
+#pdfOverlay .pdf-opts{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+#pdfOverlay .pdf-opts button{padding:.72rem .3rem;border:1px solid var(--line);border-radius:9px;
+  background:var(--bg);color:var(--ink-soft);font-family:var(--serif);font-size:.9rem;cursor:pointer}
+#pdfOverlay .pdf-opts button:hover{border-color:var(--accent);color:var(--accent)}
+#pdfOverlay .pdf-opts button.on{border-color:var(--accent);color:var(--accent);font-weight:700}
+#pdfOverlay .pdf-chk{display:flex;align-items:center;gap:.45rem;margin:.9rem .1rem .1rem;
+  font-size:.85rem;color:var(--ink-soft);cursor:pointer}
+#pdfOverlay .pdf-note{font-size:.78rem;color:var(--muted);line-height:1.6;margin:.55rem .1rem .9rem}
+#pdfOverlay .pdf-cancel{width:100%;padding:.55rem;border:0;border-radius:9px;background:transparent;
+  color:var(--muted);font-family:var(--serif);font-size:.85rem;cursor:pointer}
+#pdfOverlay .pdf-prog{display:none;text-align:center;font-size:.85rem;color:var(--ink-soft);padding:.6rem 0 .2rem}
+#pdfOverlay.busy .pdf-opts,#pdfOverlay.busy .pdf-chk,#pdfOverlay.busy .pdf-note,
+#pdfOverlay.busy .pdf-cancel{display:none}
+#pdfOverlay.busy .pdf-prog{display:block}
+@media print{
+  #pdfOverlay{display:none!important}
+  html[data-pdf="l"]   body{font-size:14pt}
+  html[data-pdf="xl"]  body{font-size:17.5pt}
+  html[data-pdf="xxl"] body{font-size:22pt}
+  html[data-pdf="l"] .chapter,html[data-pdf="xl"] .chapter,html[data-pdf="xxl"] .chapter{padding-top:1rem}
+  html[data-pdfbreak="1"] .chapter{page-break-before:always}
+  /* 그림이 빠지거나 회색으로 죽지 않도록 */
+  figure.dgm,figure.dgm img,.prologue figure,.prologue figure img{
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  figure.dgm img,.prologue figure img{max-width:100%;height:auto}
+}
+
+
+/* 엮은이의 말 (@preface) */
+.preface{max-width:var(--maxw);margin:0 auto;padding:4.5rem 1.4rem 4rem;border-bottom:1px solid var(--line)}
+.preface .pf-k{font:400 .72rem "Cormorant Garamond",serif;letter-spacing:.45em;color:var(--muted)}
+.preface h2{font:700 1.65rem/1.4 "Nanum Myeongjo",serif;margin:.5rem 0 2.4rem;color:var(--ink)}
+.preface .pf-part{margin-bottom:2.6rem}
+.preface .pf-n{display:block;font:italic 400 1.15rem "Cormorant Garamond",serif;color:var(--muted);margin-bottom:.6rem}
+.preface p{margin:0 0 1.1rem;line-height:2}
+.preface .pf-q{font-family:"Nanum Myeongjo",serif;font-weight:700;font-size:1.12em;text-align:center;margin:1.8rem 0;color:var(--ink)}
+.preface .pf-sign{text-align:right;font-size:.88em;color:var(--muted);margin-top:2.4rem}
+/* 행동바디 전자책 디자인 — 사이트와 같은 청회색 계열.
+   시스템 기본(영상전자책_시스템/자료/book.css) 대신 이 파일이 쓰입니다. */
+
+:root{
+  --bg:#f3f6f7; --surface:#ffffff; --ink:#16191c; --ink-soft:#4a5560;
+  --muted:#8a949c; --line:#e0e7ea; --accent:#3d5b68; --accent-soft:#e2ecef;
+  --deep:#28363d; --mark:#d9e8ee; --quote:#b9c4c9;
+  --maxw:720px;
+}
+html[data-theme="dark"]{
+  --bg:#13171a; --surface:#1a2024; --ink:#e8edef; --ink-soft:#b3bfc5;
+  --muted:#7e8b92; --line:#272f35; --accent:#8fb6c6; --accent-soft:#1e2a31;
+  --deep:#0f1316; --mark:#24343c; --quote:#3c474e;
+}
+
+/* 제목은 두꺼운 고딕 — 행동바디 톤에 맞게 (명조 대신) */
+.bt-title,.chapter h3,.pro-title,.cover .cover-title{
+  font-family:'Noto Sans KR','Pretendard',-apple-system,'Malgun Gothic',sans-serif;
+  font-weight:800;letter-spacing:-.03em;
+}
+
+.chapter{content-visibility:visible;contain-intrinsic-size:auto}
+
+/* ── 표지 ─────────────────────────────── */
+.cover.text{
+  background:
+    linear-gradient(180deg,rgba(16,21,24,.55) 0%,rgba(16,21,24,.50) 26%,rgba(16,21,24,.66) 50%,rgba(16,21,24,.82) 72%,rgba(16,21,24,.95) 100%),
+    url(img/f976f714dbdb.jpg) center/cover no-repeat,#1b2429;
+  color:#fff;min-height:calc(100svh - 54px);
+  justify-content:flex-end;padding-bottom:3.4rem;
+}
+.cover .cover-title,.cover .cover-sub,.cover .cover-kick,.cover-start{text-shadow:0 2px 16px rgba(0,0,0,.5)}
+.cover .cover-title{color:#fff;font-size:clamp(2.1rem,8.4vw,3.4rem);line-height:1.26}
+.cover .cover-kick{color:#bcd6e0;letter-spacing:.24em;font-weight:700;
+  text-shadow:0 1px 10px rgba(0,0,0,.85),0 0 22px rgba(0,0,0,.6)}
+.cover .cover-sub{color:#dde7ea;line-height:1.8}
+.cover .cover-rule{background:#a8c6d2;width:44px;height:2px;opacity:.85}
+.cover.text .scroll-hint{color:#c6d6dc}
+.cover-start{display:inline-block;margin:2rem 0;text-decoration:none;
+  border:1px solid rgba(255,255,255,.55);border-radius:8px;padding:.7rem 1.4rem;
+  color:#fff;font-size:.92rem;font-weight:600;transition:.15s}
+.cover-start:hover{background:rgba(255,255,255,.14)}
+.cover-note{color:#b8ccd4;font-size:.76rem;letter-spacing:.1em}
+
+/* ── 본문 ─────────────────────────────── */
+.chapter .cnum{letter-spacing:.2em;color:var(--accent);font-weight:700}
+.chapter h3{padding-left:.85rem;border-left:3px solid var(--accent)}
+.chapter .csub{font-size:.95rem;border:0;padding:0;color:var(--ink-soft);margin-bottom:.4rem}
+.chapter .csub::before,.chapter .csub::after{content:none}
+.chapter .ctime{font-size:.78rem;color:var(--muted);letter-spacing:.06em;margin-bottom:2.2rem}
+.chapter h4{font-size:1.06em;font-weight:800;margin:2.8rem 0 1rem;color:var(--deep)}
+html[data-theme="dark"] .chapter h4{color:var(--ink)}
+.chapter p{line-height:1.95}
+
+/* 사진 */
+.ph{margin:2.1rem 0}
+.ph img{display:block;width:100%;height:auto;border-radius:8px;background:var(--line)}
+.ph.two{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.ph.two img{aspect-ratio:3/4;object-fit:cover}
+.ph.two.wide img{aspect-ratio:4/3}
+.ph figcaption{grid-column:1/-1;font-size:.79rem;color:var(--muted);margin-top:.55rem;line-height:1.65}
+
+/* 영상 */
+.vid{margin:2.3rem 0;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.vid video{display:block;width:100%;aspect-ratio:16/9;background:#000}
+.vid figcaption{padding:.8rem 1.1rem;font-size:.8rem;color:var(--muted);line-height:1.6}
+.vid figcaption strong{color:var(--accent);display:block;font-size:.86rem;margin-bottom:.15rem}
+
+/* 인용 — 강사 발언.
+   색 박스로 가두지 않고 들여쓰기와 얇은 괘선으로만 구분한다. */
+.talk{margin:2.2rem 0;padding:.1rem 0 .1rem 1.5rem;
+  border-left:2px solid var(--quote);background:none;border-radius:0;
+  font-size:1.02em;line-height:1.95;color:var(--ink);letter-spacing:-.004em}
+.talk .ts{background:none;border:0;padding:0 0 0 .1em;margin-left:.4em;color:var(--muted)}
+
+/* 단계 목록 (운동 순서) */
+.chapter .steps-list{margin:1.5rem 0;padding-left:1.5rem;line-height:1.9}
+.chapter .steps-list li{margin-bottom:.75rem;padding-left:.25rem}
+.chapter .steps-list li::marker{color:var(--accent);font-weight:800}
+
+/* 시각 꼬리표 */
+.ts{display:inline-block;font-size:.68em;color:var(--muted);border:1px solid var(--line);
+  border-radius:4px;padding:0 .35em;margin-left:.3em;line-height:1.6;vertical-align:.12em;
+  white-space:nowrap;font-variant-numeric:tabular-nums;background:var(--surface)}
+
+/* 안내 문단 */
+.editor-note{font-size:.88rem;color:var(--ink-soft);background:var(--surface);
+  border:1px solid var(--line);border-radius:8px;padding:.9rem 1.1rem;line-height:1.8}
+
+/* ── 권유 상자 · 잠금 화면 ─────────────── */
+.cta,.lock{margin:3.4rem 0 1rem;padding:2.4rem 1.9rem;border-radius:12px;text-align:center;
+  background:var(--deep);color:#fff}
+html[data-theme="dark"] .cta,html[data-theme="dark"] .lock{background:#0c1013;border:1px solid var(--line)}
+.cta h4,.lock h4{color:#fff;margin:0 0 .9rem;font-size:1.22rem;line-height:1.45;letter-spacing:-.03em}
+.cta p,.lock p{color:rgba(255,255,255,.80);margin:0 auto;max-width:27em;
+  font-size:.95rem;line-height:1.85}
+.cta-btn{display:inline-block;margin-top:1.8rem;padding:.92rem 1.9rem;border-radius:9px;
+  background:#fff;color:var(--deep);font-weight:800;font-size:.97rem;text-decoration:none;
+  letter-spacing:-.02em;transition:.15s}
+.cta-btn:hover{background:#dfeaee}
+html[data-theme="dark"] .cta-btn{background:var(--accent);color:#0c1013}
+
+/* 잠금 화면.
+   위쪽에 옅은 그라데이션을 두되, 바로 앞 문단 글씨는 덮지 않을 만큼만 짧게. */
+.lock{position:relative;margin-top:1.6rem}
+.lock::before{content:"";position:absolute;left:0;right:0;top:-2.6rem;height:2.6rem;
+  background:linear-gradient(180deg,rgba(255,255,255,0),var(--surface));pointer-events:none}
+html[data-theme="dark"] .lock::before{background:linear-gradient(180deg,rgba(26,32,36,0),var(--surface))}
+.lock-ico{display:inline-grid;place-items:center;width:52px;height:52px;margin-bottom:1.2rem;
+  border-radius:50%;background:rgba(255,255,255,.10);color:#cfe0e7}
+html[data-theme="dark"] .lock-ico{background:rgba(255,255,255,.06);color:var(--accent)}
+
+/* 차례에서 잠긴 장은 제목만, 자물쇠를 달아서 (칸은 열린 장과 똑같이) */
+li.locked .lk{display:flex;gap:.85rem;padding:.66rem .2rem;opacity:.5;cursor:default}
+li.locked .lk .n{color:var(--muted);font-variant-numeric:tabular-nums;flex:none;min-width:1.6em;text-align:right}
+li.locked .lk::after{content:"🔒";margin-left:auto;font-size:.82em;opacity:.85}
+</style></head><body>
+<div id="progress"></div><header class="topbar"><button class="iconbtn" id="menuBtn" aria-label="목차">☰</button><span class="tb-title">내 몸은 지금 어느 쪽이 약한가</span><span class="spacer"></span><button class="iconbtn" id="searchBtn" aria-label="본문 검색">⌕</button><button class="iconbtn sm" id="fsDown" aria-label="글자 작게">A−</button><button class="iconbtn sm" id="fsUp" aria-label="글자 크게">A+</button><button class="iconbtn" id="themeBtn" aria-label="화면 테마 변경">☾</button></header>
+<div class="backdrop" id="backdrop"></div><nav class="drawer" id="drawer" aria-label="전자책 목차"><div class="dhead"><b>차례</b><button class="iconbtn sm" id="closeBtn" aria-label="목차 닫기">✕</button></div><div class="dtools"><button class="dtool" id="dlPdf">인쇄 / PDF</button><a class="dtool" id="dlHtml" href="#" download="바른움직임_전자책.html">파일 저장</a></div><div class="toc"><div class="part-t">바른 움직임 1교시</div><a href="#toc"><span class="n">―</span><span>전체 차례</span></a><a href="#ch-0"><span class="n">00</span><span>여는 글 · 충격파로는 낫지 않았다</span></a><a href="#ch-1"><span class="n">01</span><span>1장 · 통증은 왜 그 자리에 생기나</span></a></div></nav>
+<div class="search-overlay" id="searchOverlay"><div class="search-box"><div class="search-head"><span class="search-ico">⌕</span><input id="searchInput" type="search" aria-label="본문 검색어" placeholder="단어·대화 검색…" autocomplete="off"><button class="iconbtn sm" id="searchCloseBtn" aria-label="검색 닫기">✕</button></div><div class="search-results" id="searchResults"></div></div></div>
+<main><section class="cover text"><div class="cover-kick">행동바디 · 러닝 부상 자가 점검</div><h1 class="cover-title">내 몸은 지금<br>어느 쪽이 약한가</h1><div class="cover-rule"></div><div class="cover-sub">열심히 안 해서가 아닙니다.<br>어떤 근육을 어떻게 쓰고 있느냐의 문제입니다.</div><a class="cover-start" href="#toc">차례부터 읽기 ↓</a><div class="cover-note">물리치료사 유호진(몽탄) · 「바른 움직임」 세미나 1교시 · 2025. 07. 26</div><div class="scroll-hint">아래로 스크롤 ↓</div></section>
+<section class="prologue" id="intro"><div class="pro-kick">HOW TO READ</div><h2 class="pro-title">이 책에 대하여</h2><p>거리를 늘릴수록 아파지는 사람이 있습니다. 쉬면 괜찮아지고, 다시 뛰면 또 같은 자리가 아픕니다.</p><p>이 책은 2025년 7월 26일에 있었던 세미나 「바른 움직임」 1교시를, 혼자서도 따라 할 수 있는 형태로 정리한 것입니다. 강의한 사람은 물리치료사 유호진(몽탄)이고, 그도 한때 뛰다가 족저근막염으로 고생했습니다.</p><p>읽고 나면 할 수 있게 되는 일은 두 가지입니다. 내 좌우 중 어느 쪽이 약한지 직접 확인하는 것, 그리고 그 쪽에 맞는 운동을 하는 것. 장비도 병원도 필요 없습니다.</p><p class="editor-note">이 책은 교육 자료이며 진단이나 치료를 대신하지 않습니다. 통증이 있거나 이미 진단받은 질환이 있다면 시작 전에 의료진과 상의하시기 바랍니다.</p></section>
+<section class="book-toc" id="toc"><div class="bt-kick">CONTENTS</div><h2 class="bt-title">차례</h2><div class="bt-part"><div class="bt-pnum">01:34 → 34:39</div><div class="bt-ptitle">찾고, 고치고, 다시 본다</div><ol><li><a href="#ch-0"><span class="n">00</span><span>여는 글 · 충격파로는 낫지 않았다</span></a></li><li><a href="#ch-1"><span class="n">01</span><span>1장 · 통증은 왜 그 자리에 생기나</span></a></li><li class="locked"><span class="lk"><span class="n">02</span><span>2장 · 러닝은 버티고 미는 일이다</span></span></li><li class="locked"><span class="lk"><span class="n">03</span><span>3장 · 버티기의 주인공은 내전근</span></span></li><li class="locked"><span class="lk"><span class="n">04</span><span>4장 · 한 발로 서 보기</span></span></li><li class="locked"><span class="lk"><span class="n">05</span><span>5장 · 60초 3세트</span></span></li><li class="locked"><span class="lk"><span class="n">06</span><span>6장 · 다시 서 본다</span></span></li></ol></div></section>
+<article class="chapter" id="ch-0"><div class="cnum">CHAPTER 00</div><h3>여는 글 · 충격파로는 낫지 않았다</h3><div class="csub">물리치료사도 자기 몸은 못 고쳤다</div><div class="ctime">강의 01:34 – 05:18</div><p>강의는 자기소개로 시작하지 않았습니다. 자기가 어떻게 망가졌는지부터 말했습니다.</p><p class="talk">&quot;저도 사실 처음에 뛰고 나면서 족저근막염 때문에 고생을 많이 했어요. 물리치료사임에도 불구하고 제대로 근육을 못 써서 저도 부상을 당한 거예요.&quot; {01:52}</p><p>물리치료사입니다. 병원에서 일합니다. 그런데도 다쳤습니다. 그리고 그가 선택한 방법은 우리 대부분이 선택하는 것과 같았습니다.</p><p class="talk">&quot;저도 병원에서 일을 하니까 혼자 가서 충격파도 진짜 많이 쳤어요. 그런데 이게 충격파 하니까 그 당시만 괜찮더라고요.&quot; {03:05}</p><figure class="vid"><video controls playsinline preload="none" poster="img/385af3242ad2.jpg" aria-label="왜 이 강의를 하게 됐는지 (세미나 16:03)"><source src="https://www.dropbox.com/scl/fo/x9z7ogq3dlipkr21jr6mb/AEkZDK6_Wsb9moxwaHKD6Gc/01_160300_0.mp4?dl=0&amp;raw=1&amp;rlkey=y8ebt34tam0a33tnjdbv3qa10" type="video/mp4">영상을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.</video><img class="print-poster" src="img/385af3242ad2.jpg" alt="왜 이 강의를 하게 됐는지 (세미나 16:03)"><figcaption><strong>16:03 · 왜 이 강의를 하게 됐는지 (세미나 16:03)</strong>1분 10초 · 원본 20250726_160300.mp4 00:00–01:10</figcaption></figure><h4>그때뿐이었다</h4><p>충격파를 맞으면 그 순간은 나아집니다. 그런데 다시 뛰면 똑같이 아픕니다.</p><p class="talk">&quot;계속 그 당시에는 좀 괜찮은데 다시 어차피 뛰니까 똑같이 아프고.&quot; {03:12}</p><p>여기서 그는 방향을 바꿉니다. 아픈 곳을 치료하는 대신, 왜 아픈지를 찾기로 합니다.</p><p class="talk">&quot;결국에는 원초적으로 잘못된 근육이나 잘못된 자세를 좀 고쳐야 되겠구나 라는 생각 때문에, 그때부터 이제 약해진 근육들을 판단하는 어떤 테스트 같은 거 공부를 하고.&quot; {03:17}</p><p>약한 근육을 찾는 테스트를 공부했습니다. 찾아낸 근육을 강화하는 운동을 공부했습니다. 그리고 통증에서 벗어났습니다.</p><h4>그 다음에 한 일</h4><p>벗어난 것으로 끝내지 않았습니다. 세미나 두 달 전인 2025년 5월, 100km 울트라마라톤을 완주했습니다. 그런데 그가 강조한 건 완주가 아니었습니다.</p><p class="talk">&quot;이게 완주했다는 게 중요한 게 아니라, 그 후에도 부상 없이 계속해서 이제 운동을 하고 있고, 계속해서 기록적인 부분도 많이 늘어나고 있고.&quot; {02:37}</p><p>완주보다 중요한 건 그 뒤로도 안 다쳤다는 것입니다.</p><p>100km를 한 번에 뛴 것도 아니었습니다. 60km, 70km를 반복해서 훈련했습니다. 그 훈련에는 이유가 있었습니다.</p><p class="talk">&quot;저희도 운동을 하고 테스트를 하면서, 아 예를 들어서 왼쪽 허벅지 근육 많이 약하다 하면, 저희가 그 목표를 달성하기 전에 한 60km 정도 먼저 뛰어보는 거예요.&quot; {03:52}</p><p>뛰어보고, 약한 근육을 찾고, 보강운동을 하고, 다시 뛰어본다. 이걸 반복했습니다.</p><p class="talk">&quot;그 다음에 다시 한번 뛰어보는 거예요. 그래서 내가 제대로 근육을 강화 잘하고 있는지, 아니면 실제로 어떤 약한 근육이 활성화가 돼서 그 후에는 통증이 안 나타났는지.&quot; {04:25}</p><p>이 책이 다루는 게 그 고리입니다. 찾고, 고치고, 다시 확인하는 것.</p><h4>혼자만의 이야기가 아니다</h4><p>본인에게만 되는 방법이었다면 강의할 이유가 없었습니다. 병원에서도 같은 일이 벌어지고 있었습니다.</p><p class="talk">&quot;사실 요즘 러닝붐이거든요. 그래서 러닝하시는 분들이 정말 많아요. 그래서 병원에도 러닝 때문에 부상을 입으시고 찾아오시는 분들도 정말 많거든요.&quot; {04:52}</p><figure class="ph"><img loading="lazy" src="img/642c78221a46.jpg" width="386" height="258" alt="2025년 7월 26일 세미나 「러너를 위한 바른 움직임 &amp; 운동재활」."><figcaption>2025년 7월 26일 세미나 「러너를 위한 바른 움직임 &amp; 운동재활」.</figcaption></figure><p>그분들에게 하나씩 적용해봤고, 효과를 봤고, 그래서 세미나로 가져왔습니다.</p><h4>이 책이 가는 순서</h4><p>강의는 세 단계로 짜여 있었습니다. 이 책도 같은 순서를 따릅니다.</p><p class="talk">&quot;진짜 내가 이 동작을 하는데 근육을 진짜 잘 쓰고 있는지, 제대로 못 쓰고 있는지를 한번 확인을 할 거예요.&quot; {07:25}</p><p class="talk">&quot;그런 활성화를 확인을 한 다음에, 저희는 약해진 근육을 제대로 파악을 했으니까 필요한 건 보강 운동이나 재활 운동이겠죠?&quot; {07:41}</p><p class="talk">&quot;실제로 강화되고 활성화 됐을 때 어떻게 동작이 일어나고 어떻게 움직이게 되는지까지 같이 보려고 합니다. 이렇게 3단계로 진행을 준비했습니다.&quot; {07:53}</p><p>확인하고, 고치고, 다시 본다. 1~3장에서 왜 그래야 하는지를 보고, 4장에서 확인하고, 5장에서 고치고, 6장에서 다시 봅니다.</p><p>그리고 강사가 강의의 핵심이라고 말한 문장은 이것이었습니다.</p><p class="talk">&quot;일단 저희가 약한 근육을 파악을 해야겠죠. 그래서 통증 원인이 되는, 부상의 원인이 된 이런 약한 근육들을 한번 파악해볼 거예요.&quot; {05:19}</p><p class="talk">&quot;내가 실제로 이 근육이 많이 약하다 하면 그거에 맞는 보강 운동들이 있겠죠. 그 근육들을 활성화시켜 주거나 강화시킬 수 있는 그런 운동, 그런 운동을 제가 알려드리는 게 이번 강의의 핵심입니다.&quot; {05:44}</p><nav class="chnav" aria-label="장 이동"><a href="#toc"><span class="dir">차례</span><span class="t">처음으로</span></a><a class="next" href="#ch-1"><span class="dir">다음 →</span><span class="t">1장 · 통증은 왜 그 자리에 생기나</span></a></nav><hr class="divider"></article><article class="chapter" id="ch-1"><div class="cnum">CHAPTER 01</div><h3>1장 · 통증은 왜 그 자리에 생기나</h3><div class="csub">아픈 곳이 원인인 곳은 아니다</div><div class="ctime">강의 06:02 – 11:58</div><p>본론은 정의부터 시작합니다. 슬라이드에 적힌 문장이 이 강의 전체를 요약합니다.</p><figure class="ph"><img loading="lazy" src="img/4c3354b77dc8.jpg" width="1200" height="702" alt="강의 슬라이드 「바른 움직임이란 무엇인가?」"><figcaption>강의 슬라이드 「바른 움직임이란 무엇인가?」</figcaption></figure><p class="talk">바른 움직임은 정해진 동작에 맞는 정확한 근육을 사용하는 것입니다. 약화되거나 비활성화된 근육이 있으면 다른 근육이 대신 작동하게 되는데, 이것이 바로 통증과 부상의 시작점입니다.</p><p>핵심은 &quot;다른 근육이 대신 작동한다&quot; 입니다. 할 일을 못 하는 근육이 있으면 몸은 그냥 멈추지 않습니다. 어떻게든 해냅니다. 다른 근육을 끌어다 씁니다.</p><p>그리고 대신 일한 쪽이 아파집니다.</p><h4>당장은 안 아프다는 게 문제다</h4><p>잘못된 근육을 써도 당장은 큰 문제가 없습니다. 그게 함정입니다.</p><p class="talk">&quot;잘못된 근육을 사용하게 되면 사실 일시적으로 통증이 올 수 있고, 당장 조금만 아프고 다시 지나면 안 아플 수 있거든요.&quot; {06:45}</p><p class="talk">&quot;그런데 이게 시간이 지나고 지나면서 만성 통증으로 이어지고 심각한 부상까지 이어집니다.&quot; {06:54}</p><p>슬라이드에도 같은 경고가 붙어 있습니다.</p><p class="talk">잘못된 근육 사용은 일시적 불편함을 넘어 만성 통증과 심각한 부상으로 이어질 수 있습니다.</p><p>강사가 덧붙인 말이 더 구체적입니다.</p><p class="talk">&quot;지금은 사실 여러분들께서 운동을 하는 데 있어서 그냥 가볍게 무시하고 넘어갈 수 있었던 통증들이, 그게 계속 반복되고 쌓이면 엄청나게 심각한 부상이 될 수 있고, 만성 통증 때문에 나중에는 진짜 운동을 하고 싶어도 운동을 못 하게 될 수도 있다.&quot; {07:00}</p><h4>몸은 두 가지 방식으로 움직인다</h4><p>여기서 개념 하나가 나옵니다. 이름은 어렵지만 내용은 어렵지 않습니다.</p><p>피드백은 일이 벌어진 뒤에 반응하는 것입니다.</p><p class="talk">&quot;예를 들어서 제가 걸어가고 있다가 돌부리에 걸려서 넘어질 때 균형을 잡기 위해서 발을 한 번 크게 내밀잖아요. 아니면 버스를 타고 있을 때도 마찬가지로 균형을 잡기 위해 발을 넓혀서 무게중심을 잡고.&quot; {08:40}</p><p>넘어질 뻔하니까 발을 내민다. 흔들리니까 다리를 벌린다. 사후 대응입니다.</p><p>피드포워드는 반대입니다. 일이 벌어지기 전에 미리 움직입니다.</p><p class="talk">&quot;예를 들어서 제가 무거운 공을 들고 있어요. 받으라고 하고 다른 분께 던진다고 쳐요. 그럼 던질 때 다른 분들은 공이 온다는 걸 예상하고 무게를 낮춘다든지 팔을 뻗는다든지 이런 동작들을 하죠.&quot; {09:15}</p><p class="talk">&quot;그러니까 어떤 동작을 하는 데 있어서, 아니면 어떤 현상이 일어날 걸 미리 머리에서 계산을 하고 미리 움직이는 거예요.&quot; {09:32}</p><figure class="vid"><video controls playsinline preload="none" poster="img/0b11f5e041cc.jpg" aria-label="피드백과 피드포워드 (세미나 16:08)"><source src="https://www.dropbox.com/scl/fo/x9z7ogq3dlipkr21jr6mb/AF89if25EL3Diuxe9sSFy6E/02_160818_0.mp4?dl=0&amp;raw=1&amp;rlkey=y8ebt34tam0a33tnjdbv3qa10" type="video/mp4">영상을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.</video><img class="print-poster" src="img/0b11f5e041cc.jpg" alt="피드백과 피드포워드 (세미나 16:08)"><figcaption><strong>16:08 · 피드백과 피드포워드 (세미나 16:08)</strong>1분 20초 · 원본 20250726_160818.mp4 00:00–01:20</figcaption></figure><h4>달리기는 피드포워드다</h4><p>이게 왜 중요한가. 달리기가 바로 피드포워드이기 때문입니다.</p><p class="talk">&quot;예를 들어서 달리기가 마찬가지예요. 저희가 다리를 들어 올리거나 바닥을 밀어주는 현상들이 있겠죠. 머릿속에서 다리를 들어 올려야 하는 타이밍에 들어 올리는데, 그때 약화된 근육이 있어요.&quot; {09:38}</p><p>미리 준비돼야 할 근육이 준비되지 않으면 어떻게 될까요.</p><p class="talk">&quot;그러면 여기서 균형을 잡지 못하고 휘청거리면서 그거를 다른 쪽 발목이나 무릎으로 보상하게 됩니다.&quot; {09:51}</p><p>보상. 이 강의의 두 번째 핵심 개념입니다.</p><h4>보상 움직임, 대신 일하는 근육</h4><figure class="ph"><img loading="lazy" src="img/088cdbd47c8f.jpg" width="1200" height="702" alt="강의 슬라이드 「핵심 개념 ②: 보상 움직임」"><figcaption>강의 슬라이드 「핵심 개념 ②: 보상 움직임」</figcaption></figure><p>슬라이드는 이걸 세 단계로 보여줍니다.</p><ol class="steps-list"><li>근육 약화·비활성화 — 특정 근육이 제대로 작동하지 않음</li><li>다른 근육의 과도한 사용 — 다른 근육이 약한 근육의 역할을 대신함</li><li>통증과 부상 발생 — 비효율적 움직임으로 인한 부작용 발생</li></ol><p>헬스장에서 흔히 보는 장면이 예시로 나왔습니다.</p><p class="talk">&quot;예를 들어 어깨를 올려주는 사이드 레터럴 레이즈 같은 운동도 있죠? 그럼 아령을 들고 이렇게 운동을 합니다. 그런데 어깨 근육이 많이 부족하거나 약화가 되어 있어요. 그러면 나도 모르게 승모근을 올린다든지.&quot; {10:42}</p><p>어깨 운동을 했는데 목이 아픕니다. 어깨가 할 일을 승모근이 대신 했기 때문입니다.</p><p class="talk">&quot;그래서 저는 어깨 운동을 했는데 목이 아프다든지, 허리 이런 데서 좀 아픔을 쓰게 된다든가 이런 현상들이 나타난다? 이게 다 보상 움직임 때문에 나타나는 거고.&quot; {11:02}</p><figure class="vid"><video controls playsinline preload="none" poster="img/9fa928f6b8fb.jpg" aria-label="보상 움직임이란 (세미나 16:10)"><source src="https://www.dropbox.com/scl/fo/x9z7ogq3dlipkr21jr6mb/AA6fApG6HFKxqWHfK_K9n6g/03_161018_0.mp4?dl=0&amp;raw=1&amp;rlkey=y8ebt34tam0a33tnjdbv3qa10" type="video/mp4">영상을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.</video><img class="print-poster" src="img/9fa928f6b8fb.jpg" alt="보상 움직임이란 (세미나 16:10)"><figcaption><strong>16:10 · 보상 움직임이란 (세미나 16:10)</strong>1분 2초 · 원본 20250726_161018.mp4 00:00–01:02</figcaption></figure><p>러닝에서도 똑같습니다.</p><p class="talk">&quot;허벅지를 써야 되는 어떤 동작에서 종아리를 쓰니까 종아리로 부상을 당하는 거고, 종아리를 써야 되는데 종아리를 안 쓰고 허벅지를 쓰니까 무릎 같은 데서 부상이 나타나는 거예요.&quot; {11:17}</p><p>그래서 아픈 곳과 원인인 곳이 다릅니다. 무릎이 아프다고 무릎이 문제인 게 아닙니다. 무릎에게 남의 일까지 시킨 누군가가 있습니다.</p><p class="editor-note">다만 모든 통증이 보상 움직임 때문인 것은 아닙니다. 구조적 손상, 염증, 다른 질환이 원인일 수 있습니다. 통증이 지속되거나 심해진다면 의료기관에서 평가를 받으시기 바랍니다.</p><section class="lock"><span class="lock-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span><h4>여기까지가 미리 보기입니다</h4><p>이 뒤로는 러닝에서 버티기와 밀기가 어떻게 나뉘는지, 그 버티기를 책임지는 근육이 무엇인지, 내 좌우 중 어느 쪽이 약한지 2분 만에 확인하는 방법, 그리고 약한 쪽에 맞춰 할 운동까지 들어 있습니다. 무료 사전 상담을 신청하시면 전체본을 보내드립니다.</p><a class="cta-btn" href="https://open.kakao.com/o/sJ2uyJte" target="_blank" rel="noopener">무료 사전 상담 신청하고 전체본 받기</a></section><nav class="chnav" aria-label="장 이동"><a href="#ch-0"><span class="dir">← 이전</span><span class="t">여는 글 · 충격파로는 낫지 않았다</span></a><a class="next" href="#toc"><span class="dir">차례로 ↑</span><span class="t">다시 보기</span></a></nav><hr class="divider"></article><div class="endmark"><div class="em-dot"></div>행동바디 · 2025년 7월 26일 세미나 1교시</div></main><button class="iconbtn" id="toTop" aria-label="차례로 이동">☰</button><div id="resumeBar"><span class="rb-go">이어읽기</span><span class="rb-x" aria-label="닫기">✕</span></div><script>
+const root=document.documentElement;
+const saved=localStorage.getItem('bm_theme');
+root.setAttribute('data-theme', saved ? saved : 'light');
+function updThemeIcon(){document.getElementById('themeBtn').textContent=root.getAttribute('data-theme')==='dark'?'☀':'☾';}
+updThemeIcon();
+document.getElementById('themeBtn').onclick=()=>{
+  const d=root.getAttribute('data-theme')==='dark'?'light':'dark';
+  root.setAttribute('data-theme',d);localStorage.setItem('bm_theme',d);updThemeIcon();
+};
+const _isMobileFs=matchMedia('(max-width:520px)').matches;
+let fs=parseInt(localStorage.getItem('bm_fs2')||(_isMobileFs?'21':'19'));
+function applyFs(persist){root.style.setProperty('--fs',fs+'px');if(persist)localStorage.setItem('bm_fs2',fs);}
+applyFs(false);
+document.getElementById('fsUp').onclick=()=>{fs=Math.min(28,fs+1);applyFs(true);};
+document.getElementById('fsDown').onclick=()=>{fs=Math.max(15,fs-1);applyFs(true);};
+const drawer=document.getElementById('drawer'),backdrop=document.getElementById('backdrop');
+function openD(){drawer.classList.add('open');backdrop.classList.add('open');}
+function closeD(){drawer.classList.remove('open');backdrop.classList.remove('open');}
+document.getElementById('menuBtn').onclick=openD;
+document.getElementById('closeBtn').onclick=closeD;
+backdrop.onclick=closeD;
+function jumpTo(id){
+  const el=document.getElementById(id); if(!el) return;
+  el.scrollIntoView({block:'start',behavior:'instant'});
+  requestAnimationFrame(()=>el.scrollIntoView({block:'start',behavior:'instant'}));
+}
+document.addEventListener('click',e=>{
+  const a=e.target.closest('a[href^="#"]'); if(!a) return;
+  const id=a.getAttribute('href').slice(1);
+  const el=document.getElementById(id); if(!el) return;
+  e.preventDefault();
+  if(history.replaceState) history.replaceState(null,'','#'+id);
+  const q=a.getAttribute('data-q');
+  clearHighlights();
+  jumpTo(id);
+  if(q){
+    closeSearch();
+    requestAnimationFrame(()=>{ highlightIn(el,q);
+      const m=el.querySelector('mark.shl'); if(m) m.scrollIntoView({block:'center',behavior:'instant'}); });
+  }
+  if(drawer.classList.contains('open')) setTimeout(closeD,140);
+});
+const bar=document.getElementById('progress'),toTop=document.getElementById('toTop');
+function onScroll(){
+  const h=document.documentElement;const st=h.scrollTop||document.body.scrollTop;
+  const sh=h.scrollHeight-h.clientHeight;const p=sh>0?(st/sh*100):0;
+  bar.style.width=p+'%';
+  toTop.classList.toggle('show',st>600);
+}
+document.addEventListener('scroll',onScroll,{passive:true});onScroll();
+toTop.onclick=()=>jumpTo('toc');
+const links=new Map();document.querySelectorAll('.toc a').forEach(a=>links.set(a.getAttribute('href').slice(1),a));
+const io=new IntersectionObserver((es)=>{
+  es.forEach(e=>{if(e.isIntersecting){
+    const id=e.target.id;const a=links.get(id);
+    if(a){document.querySelectorAll('.toc a.active').forEach(x=>x.classList.remove('active'));
+      a.classList.add('active');if(drawer.classList.contains('open')) a.scrollIntoView({block:'nearest'});}
+    if(id&&id.indexOf('ch-')===0){ try{localStorage.setItem('bm_resume2',id);}catch(_){} }
+  }});
+},{rootMargin:'-45% 0px -50% 0px',threshold:0});
+document.querySelectorAll('.chapter,.part,.prologue,.paths,.epilogue').forEach(s=>io.observe(s));
+
+document.getElementById('dlPdf').onclick=()=>{ if(drawer.classList.contains('open')) closeD(); setTimeout(()=>window.print(),300); };
+
+function esc_(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+const SIDX=[];
+document.querySelectorAll('.chapter').forEach(sec=>{
+  const t=sec.querySelector('h3'); const title=t?t.textContent.trim():'';
+  const nEl=sec.querySelector('.cnum'); const num=nEl?nEl.textContent.trim():'';
+  const text=sec.textContent.replace(/\s+/g,' ').trim();
+  SIDX.push({id:sec.id,title:title,num:num,text:text,low:text.toLowerCase()});
+});
+const sOverlay=document.getElementById('searchOverlay'),sInput=document.getElementById('searchInput'),sResults=document.getElementById('searchResults');
+function openSearch(){ sOverlay.classList.add('open'); sInput.focus(); sInput.select(); }
+function closeSearch(){ sOverlay.classList.remove('open'); }
+document.getElementById('searchBtn').onclick=openSearch;
+document.getElementById('searchCloseBtn').onclick=closeSearch;
+sOverlay.addEventListener('click',e=>{ if(e.target===sOverlay) closeSearch(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSearch(); });
+let sT=null;
+sInput.addEventListener('input',()=>{ clearTimeout(sT); sT=setTimeout(()=>runSearch(sInput.value),140); });
+function runSearch(q){
+  q=(q||'').trim();
+  if(!q){ sResults.innerHTML='<div class="search-empty">단어를 입력하면 챕터별로 찾아드려요</div>'; return; }
+  const lq=q.toLowerCase(), out=[];
+  const reSrc=lq.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  for(const it of SIDX){
+    let p=it.low.indexOf(lq); if(p<0) continue;
+    let c=0,f=0,x; while((x=it.low.indexOf(lq,f))>=0){c++;f=x+lq.length;}
+    const st=Math.max(0,p-22), en=Math.min(it.text.length,p+lq.length+52);
+    const snip=(st>0?'…':'')+it.text.slice(st,en)+(en<it.text.length?'…':'');
+    const snipH=esc_(snip).replace(new RegExp(reSrc,'gi'),m=>'<mark>'+m+'</mark>');
+    out.push({it:it,c:c,snipH:snipH});
+  }
+  if(!out.length){ sResults.innerHTML='<div class="search-empty">“'+esc_(q)+'” 검색 결과가 없습니다</div>'; return; }
+  sResults.innerHTML=out.map(function(o){
+    const label=(o.it.num?o.it.num+'. ':'')+esc_(o.it.title);
+    return '<a class="search-result" href="#'+o.it.id+'" data-q="'+esc_(q)+'">'
+      +'<div class="sr-title">'+label+'<span class="sr-count">'+o.c+'</span></div>'
+      +'<div class="sr-snip">'+o.snipH+'</div></a>';
+  }).join('');
+}
+function clearHighlights(){
+  document.querySelectorAll('mark.shl').forEach(function(m){
+    const par=m.parentNode; par.replaceChild(document.createTextNode(m.textContent),m); par.normalize();
+  });
+}
+function highlightIn(root,q){
+  const lq=(q||'').toLowerCase(); if(!lq) return;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);
+  const nodes=[]; let node;
+  while(node=walker.nextNode()){ if(node.nodeValue.toLowerCase().indexOf(lq)>=0) nodes.push(node); }
+  nodes.forEach(function(nd){
+    const s=nd.nodeValue, low=s.toLowerCase(), frag=document.createDocumentFragment();
+    let i=0,p;
+    while((p=low.indexOf(lq,i))>=0){
+      if(p>i) frag.appendChild(document.createTextNode(s.slice(i,p)));
+      const mk=document.createElement('mark'); mk.className='shl'; mk.textContent=s.slice(p,p+lq.length); frag.appendChild(mk);
+      i=p+lq.length;
+    }
+    if(i<s.length) frag.appendChild(document.createTextNode(s.slice(i)));
+    nd.parentNode.replaceChild(frag,nd);
+  });
+}
+runSearch('');
+
+// ---- per-chapter copy button ----
+function buildCopyText(ch){
+  const h3=ch.querySelector('h3'); const csub=ch.querySelector('.csub');
+  const title=h3?h3.textContent.trim():''; const sub=csub?csub.textContent.trim():'';
+  const header=sub?('<'+title+', "'+sub+'">'):('<'+title+'>');
+  const paras=Array.from(ch.querySelectorAll('p')).map(p=>p.textContent.trim()).filter(Boolean);
+  return header+'\n\n'+paras.join('\n\n');
+}
+function flashCopied(btn){
+  const lab=btn.querySelector('.cb-label'); btn.classList.add('copied');
+  if(lab){ const prev=lab.textContent; lab.textContent='복사됨';
+    setTimeout(()=>{ lab.textContent=prev; btn.classList.remove('copied'); },1400); }
+}
+function copyChapter(text,btn){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>flashCopied(btn)).catch(()=>copyFallback(text,btn));
+  } else copyFallback(text,btn);
+}
+function copyFallback(text,btn){
+  const ta=document.createElement('textarea'); ta.value=text;
+  ta.style.position='fixed'; ta.style.top='-9999px'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); flashCopied(btn); }catch(e){}
+  document.body.removeChild(ta);
+}
+document.querySelectorAll('.chapter').forEach(ch=>{
+  const btn=document.createElement('button');
+  btn.type='button'; btn.className='copy-btn'; btn.setAttribute('aria-label','이 꼭지 복사');
+  btn.innerHTML='<span class="cb-ico">⧉</span><span class="cb-label">복사</span>';
+  btn.addEventListener('click',()=>copyChapter(buildCopyText(ch),btn));
+  ch.appendChild(btn);
+});
+
+// ---- resume reading (읽던 위치) ----
+(function(){
+  const rbar=document.getElementById('resumeBar'); if(!rbar) return;
+  var rid=null; try{ rid=localStorage.getItem('bm_resume2'); }catch(_){}
+  function hide(){ rbar.classList.remove('show'); }
+  if(rid && rid.indexOf('ch-')===0 && document.getElementById(rid)){
+    rbar.classList.add('show');
+    rbar.querySelector('.rb-go').onclick=function(){ jumpTo(rid); hide(); };
+    rbar.querySelector('.rb-x').onclick=function(e){ e.stopPropagation(); hide(); };
+    setTimeout(hide, 10000);
+  }
+})();
+/* ── PDF 저장 (PDF_SIZE_PATCH_v2) ───────────────────────── */
+(function(){
+  var btn=document.getElementById('dlPdf'); if(!btn) return;
+  var ov=document.createElement('div'); ov.id='pdfOverlay';
+  ov.innerHTML='<div class="pdf-box"><div class="pdf-h">PDF 글자 크기</div>'+
+    '<div class="pdf-opts">'+
+      '<button data-s="m">보통</button><button data-s="l">크게</button>'+
+      '<button data-s="xl">아주 크게</button><button data-s="xxl">최대</button>'+
+    '</div>'+
+    '<label class="pdf-chk"><input type="checkbox" id="pdfBreak"> 꼭지마다 새 페이지에서 시작</label>'+
+    '<div class="pdf-note">휴대폰 화면에 띄워놓고 강의할 때는 <b>아주 크게</b> 또는 <b>최대</b>를 권합니다.</div>'+
+    '<div class="pdf-prog">그림 불러오는 중… <span id="pdfProgN">0</span></div>'+
+    '<button class="pdf-cancel">취소</button></div>';
+  document.body.appendChild(ov);
+  var cur='m', brk=false;
+  try{ cur=localStorage.getItem('bm_pdfsize')||'m'; brk=localStorage.getItem('bm_pdfbreak')==='1'; }catch(_){}
+  var opts=[].slice.call(ov.querySelectorAll('.pdf-opts button'));
+  var chk=ov.querySelector('#pdfBreak'); chk.checked=brk;
+  var prog=ov.querySelector('#pdfProgN');
+  function mark(){ opts.forEach(function(b){ if(b.dataset.s===cur){b.classList.add('on');}else{b.classList.remove('on');} }); }
+  mark();
+  function close(){ ov.classList.remove('open'); ov.classList.remove('busy'); }
+
+  /* 도해·사진은 loading="lazy" 라 화면 밖이면 디코딩되지 않는다.
+     그대로 인쇄하면 그림 자리가 빈칸으로 나오므로 전부 강제로 불러온다. */
+  function loadAllImages(done){
+    var imgs=[].slice.call(document.images);
+    imgs.forEach(function(i){ try{ i.setAttribute('loading','eager'); }catch(_){} });
+    var pend=imgs.filter(function(i){ return !(i.complete && i.naturalWidth>0); });
+    if(!pend.length){ done(); return; }
+    ov.classList.add('busy');
+    var n=0, total=pend.length;
+    prog.textContent='0 / '+total;
+    Promise.all(pend.map(function(i){
+      var d;
+      try{ d = i.decode ? i.decode() : Promise.resolve(); }catch(_){ d=Promise.resolve(); }
+      return d['catch'](function(){}).then(function(){ n++; prog.textContent=n+' / '+total; });
+    })).then(function(){ setTimeout(done,250); });
+  }
+
+  btn.onclick=function(){
+    try{ if(typeof closeD==='function'&&drawer&&drawer.classList.contains('open')) closeD(); }catch(_){}
+    setTimeout(function(){ ov.classList.remove('busy'); ov.classList.add('open'); },260);
+  };
+  opts.forEach(function(b){ b.onclick=function(){
+    cur=b.dataset.s; mark();
+    try{ localStorage.setItem('bm_pdfsize',cur); localStorage.setItem('bm_pdfbreak',chk.checked?'1':'0'); }catch(_){}
+    document.documentElement.setAttribute('data-pdf',cur);
+    document.documentElement.setAttribute('data-pdfbreak',chk.checked?'1':'0');
+    loadAllImages(function(){ close(); setTimeout(function(){ window.print(); },200); });
+  };});
+  ov.querySelector('.pdf-cancel').onclick=close;
+  ov.addEventListener('click',function(e){ if(e.target===ov && !ov.classList.contains('busy')) close(); });
+})();
+
+document.querySelectorAll('video').forEach(v=>v.addEventListener('play',()=>{document.querySelectorAll('video').forEach(x=>{if(x!==v)x.pause()})}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD()});
+document.getElementById('dlHtml').addEventListener('click',e=>{e.preventDefault();const b=new Blob(['<!doctype html>\n'+document.documentElement.outerHTML],{type:'text/html;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='바른움직임_전자책.html';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
+</script></body></html>
